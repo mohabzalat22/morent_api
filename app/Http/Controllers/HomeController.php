@@ -9,11 +9,12 @@ class HomeController extends Controller
 {
     //popular cars
     public function index(Request $request){
-        $pick =  $request->pick;
-        $drop = $request->drop;
-        if($pick->count() != 0 && $drop->count() == 0)
-        {
-            return Car::where();
-        }
+        // $pick =  $request->pick;
+        // $drop = $request->drop;
+        // if($pick->count() != 0 && $drop->count() == 0)
+        // {
+        //     return Car::where();
+        // }
+        return Car::all();
     }
 }
