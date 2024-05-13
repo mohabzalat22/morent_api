@@ -24,17 +24,19 @@ Route::prefix('v1')->group(function(){
     Route::post('/', [HomeController::class, 'index']);
 
     // CATEGORY
-    // Route::get('/category', [CategoryController::class, 'index']);
+    Route::get('/category', [CategoryController::class, 'index']);
     
     // CATEGORY DATA MODEL AND CAPACITY FILTER
-    // Route::get('/category/data', [CategoryController::class, 'data']);
+    Route::get('/category/data', [CategoryController::class, 'data']);
     
     // CATEGORY CARS FILTER POST
-    // Route::post('/category/filter', [CategoryController::class, 'filter']);
+    Route::post('/category/filter', [CategoryController::class, 'filter']);
     
     // DETAIL
-    // Route::get('/detail/{id}', [DetailController::class, 'show']);
+    Route::get('/detail/{id}', [DetailController::class, 'show']);
     
     // DETAIL CARS FILTER POST
-    // Route::post('/detail/filter', [DetailController::class, 'filter']);
-});
+    Route::post('/detail/filter', [DetailController::class, 'filter']);
+
+    
+})->middleware('api');
