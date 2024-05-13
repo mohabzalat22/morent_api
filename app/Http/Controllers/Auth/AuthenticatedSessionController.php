@@ -21,7 +21,7 @@ class AuthenticatedSessionController extends Controller
 
         $user->tokens()->delete();
 
-        $token = $user->createToken('token');
+        $token = $user->createToken('token'); 
 
         return response()->json([
             'user' => $user,
@@ -32,14 +32,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): Response
+    public function destroy(Request $request)
     {
-        Auth::guard('web')->logout();
+        $user = $request->user();
+        $user->tokens()->delete();
 
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
-        return response()->noContent();
+        return response()->json([
+            'log_out' => 'true'
+        ]);
     }
 }
