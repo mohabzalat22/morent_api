@@ -18,34 +18,48 @@ class HomeController extends Controller
                 //pick
                 if(array_key_exists('pick', $request->data[0])){ 
                     // start time filter not between database start , end 
-                    $location = strtolower($request->data[0]['pick']['location']);
-                    $filter_reservation_date = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
-                    $reservation = Reservation::with('car')
-                    ->where('pick', $location)
-                    ->where(function ($query) use ($filter_reservation_date) {
-                        $query->where('start_time', '>' ,$filter_reservation_date);
-                        $query->orWhere('end_time', '<' ,$filter_reservation_date);
-                    })
-                    ->get();
-                    return $reservation;
+                    $pick_location = strtolower($request->data[0]['pick']['location']);
+                    $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
+                    $cars_after_filter = Car::whereHas(
+                        'reservations',
+                        function ($query) use ($pick_date_time) {
+                            $query->where('start_time', '>', $pick_date_time);
+                            $query->orWhere('end_time', '<', $pick_date_time);
+                        }
+                    )->get();
+                    return $cars_after_filter;
                 }
                 //drop
                 else{
-                    $location = strtolower($request->data[0]['drop']['location']);
-                    $filter_reservation_date = carbon::parse($request->data[0]['drop']['date'] . $request->data[0]['drop']['time']);
-                    $reservation = Reservation::with('car')
-                    ->where('drop', $location)
-                    ->where(function ($query) use ($filter_reservation_date) {
-                        $query->where('start_time', '>' ,$filter_reservation_date);
-                        $query->orWhere('end_time', '<' ,$filter_reservation_date);
-                    })
-                    ->get();
-                    return $reservation;
+                    $drop_location = strtolower($request->data[0]['drop']['location']);
+                    $drop_date_time = carbon::parse($request->data[0]['drop']['date'] . $request->data[0]['drop']['time']);
+                    $cars_after_filter = Car::whereHas(
+                        'reservations',
+                        function ($query) use ($drop_date_time) {
+                            $query->where('start_time', '>', $drop_date_time);
+                            $query->orWhere('end_time', '<', $drop_date_time);
+                        }
+                    )->get();
+                    return $cars_after_filter;
                 }
             }
             elseif($req_length==2){
                 // both
-                return $request->data;
+                // return $request->all();
+                // $pick_location = strtolower($request->data[0]['pick']['location']);
+                // $drop_location = strtolower($request->data[1]['drop']['location']);
+                $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
+                $drop_date_time = carbon::parse($request->data[1]['drop']['date'] . $request->data[1]['drop']['time']);
+
+                $cars_after_filter = Car::whereHas(
+                    'reservations',
+                    function ($query) use ($pick_date_time, $drop_date_time) {
+                        $query->where('start_time', '>', $pick_date_time)->where('start_time', '>', $drop_date_time);
+                        $query->orWhere('end_time', '<', $pick_date_time)->where('end_time', '<', $drop_date_time);
+                    }
+                )
+                ->get();
+                return $cars_after_filter;
             }
         }
         return Car::all();
