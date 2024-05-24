@@ -22,9 +22,10 @@ class HomeController extends Controller
                     $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
                     $cars_after_filter = Car::whereHas(
                         'reservations',
-                        function ($query) use ($pick_date_time) {
+                        function ($query) use ($pick_date_time, $pick_location) {
                             $query->where('start_time', '>', $pick_date_time);
                             $query->orWhere('end_time', '<', $pick_date_time);
+                            $query->where('pick', $pick_location);
                         }
                     )->get();
                     return $cars_after_filter;
@@ -35,9 +36,10 @@ class HomeController extends Controller
                     $drop_date_time = carbon::parse($request->data[0]['drop']['date'] . $request->data[0]['drop']['time']);
                     $cars_after_filter = Car::whereHas(
                         'reservations',
-                        function ($query) use ($drop_date_time) {
+                        function ($query) use ($drop_date_time, $drop_location) {
                             $query->where('start_time', '>', $drop_date_time);
                             $query->orWhere('end_time', '<', $drop_date_time);
+                            $query->where('drop', $drop_location);
                         }
                     )->get();
                     return $cars_after_filter;
@@ -45,17 +47,18 @@ class HomeController extends Controller
             }
             elseif($req_length==2){
                 // both
-                // return $request->all();
-                // $pick_location = strtolower($request->data[0]['pick']['location']);
-                // $drop_location = strtolower($request->data[1]['drop']['location']);
+                $pick_location = strtolower($request->data[0]['pick']['location']);
+                $drop_location = strtolower($request->data[1]['drop']['location']);
                 $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
                 $drop_date_time = carbon::parse($request->data[1]['drop']['date'] . $request->data[1]['drop']['time']);
 
                 $cars_after_filter = Car::whereHas(
                     'reservations',
-                    function ($query) use ($pick_date_time, $drop_date_time) {
+                    function ($query) use ($pick_date_time, $drop_date_time, $pick_location, $drop_location) {
                         $query->where('start_time', '>', $pick_date_time)->where('start_time', '>', $drop_date_time);
                         $query->orWhere('end_time', '<', $pick_date_time)->where('end_time', '<', $drop_date_time);
+                        $query->where('pick', $pick_location);
+                        $query->where('drop', $drop_location);
                     }
                 )
                 ->get();
