@@ -38,5 +38,4 @@ Route::prefix('v1')->group(function(){
     // DETAIL CARS FILTER POST
     Route::post('/detail/filter', [DetailController::class, 'filter']);
 
-    
-})->middleware('api');
+});
