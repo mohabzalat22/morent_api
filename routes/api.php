@@ -6,12 +6,19 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DetailController;
+use App\Http\Controllers\UserDataController;
 
 Route::middleware(['auth:sanctum'])->group(
     function(){
         Route::get('/user', function(Request $request){
             return $request->user();
         });
+        // profile controller
+        Route::post('/user/data/reservations', [UserDataController::class, 'reservations']);
+        Route::post('/user/data/reviews', [UserDataController::class, 'reviews']);
+        // send review
+        Route::post('/user/data/make/review', [UserDataController::class, 'makeReview']);
+
         // payment controller
     }
 );

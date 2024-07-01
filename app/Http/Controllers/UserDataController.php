@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Car;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,8 +20,12 @@ class UserDataController extends Controller
 
     public function reviews(Request $request){
         $user = $request->user;
-        if($user['id'] == Auth::user()->id){
-           return User::find(Auth::user()->id)->reviews;
+        $card_id = $request->car_id;
+        if($user['id'] == Auth::user()->id){ // my review crud 
+          return Car::find($card_id)->reviews;
+        }
+        else{
+          return Car::find($card_id)->reviews;
         }
     }
 
