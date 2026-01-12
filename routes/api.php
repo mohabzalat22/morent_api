@@ -7,12 +7,19 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DetailController;
 use App\Http\Controllers\UserDataController;
+use App\Http\Controllers\ProfileController;
 
 Route::middleware(['auth:sanctum'])->group(
     function () {
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
+
+        // Profile routes - auth user can only access their own profile
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::put('/profile', [ProfileController::class, 'update']);
+        Route::delete('/profile', [ProfileController::class, 'destroy']);
+
         // profile controller
         Route::post('/user/data/reservations', [UserDataController::class, 'reservations']);
         Route::post('/user/data/reviews', [UserDataController::class, 'reviews']);
