@@ -1,63 +1,100 @@
 <?php
 
+/**
+ * API Routes
+ *
+ * All routes are prefixed with /api and use the api middleware.
+ */
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-// controllers
+use App\Http\Controllers\CarController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\DetailController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReviewController;
 
-Route::middleware(['auth:sanctum'])->group(
-    function () {
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        });
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+|
+| Routes that require authentication via Sanctum.
+|
+*/
 
-        // Profile routes
-        Route::get('/profile', [ProfileController::class, 'show']);
-        Route::put('/profile', [ProfileController::class, 'update']);
-        Route::delete('/profile', [ProfileController::class, 'destroy']);
+Route::middleware(['auth:sanctum'])->group(function () {
+    /**
+     * GET /api/user - Get authenticated user
+     */
+    Route::get('/user', fn(Request $request) => $request->user());
 
-        // Reservations
-        Route::get('/reservations', [ReservationController::class, 'index']);
-        Route::get('/reservations/{reservation}', [ReservationController::class, 'show']);
-        Route::post('/reservations', [ReservationController::class, 'store']);
-        Route::put('/reservations/{reservation}', [ReservationController::class, 'update']);
-        Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy']);
+    /**
+     * Profile Routes
+     * GET    /api/profile - Show profile
+     * PUT    /api/profile - Update profile
+     * DELETE /api/profile - Delete profile
+     */
+    Route::apiResource('profile', ProfileController::class)->only(['show', 'update', 'destroy']);
 
-        // Reviews
-        Route::get('/cars/{car}/reviews', [ReviewController::class, 'index']);
-        Route::post('/cars/{car}/reviews', [ReviewController::class, 'store']);
-        Route::get('/reviews/{review}', [ReviewController::class, 'show']);
-        Route::put('/reviews/{review}', [ReviewController::class, 'update']);
-        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+    /**
+     * Reservation Routes
+     * GET    /api/reservations           - List user reservations
+     * POST   /api/reservations           - Create reservation
+     * GET    /api/reservations/{id}      - Show reservation
+     * PUT    /api/reservations/{id}      - Update reservation
+     * DELETE /api/reservations/{id}      - Delete reservation
+     */
+    Route::apiResource('reservations', ReservationController::class);
 
-        // payment controller
-    }
-);
+    /**
+     * Review Routes (nested under cars)
+     * GET  /api/cars/{car}/reviews - List reviews for a car
+     * POST /api/cars/{car}/reviews - Create review for a car
+     */
+    Route::apiResource('cars.reviews', ReviewController::class)->only(['index', 'store']);
 
-//AUTH
+    /**
+     * Review Routes (standalone)
+     * GET    /api/reviews/{id} - Show review
+     * PUT    /api/reviews/{id} - Update review
+     * DELETE /api/reviews/{id} - Delete review
+     */
+    Route::apiResource('reviews', ReviewController::class)->only(['show', 'update', 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
 require __DIR__ . '/auth.php';
 
+/*
+|--------------------------------------------------------------------------
+| Public API v1 Routes
+|--------------------------------------------------------------------------
+|
+| Public routes that don't require authentication.
+|
+*/
 Route::prefix('v1')->group(function () {
-    // HOME
+    /**
+     * POST /api/v1/ - Home page data
+     */
     Route::post('/', [HomeController::class, 'index']);
 
-    // CATEGORY
-    Route::get('/category', [CategoryController::class, 'index']);
-
-    // CATEGORY DATA MODEL AND CAPACITY FILTER
-    Route::get('/category/data', [CategoryController::class, 'data']);
-
-    // CATEGORY CARS FILTER POST
-    Route::post('/category/filter', [CategoryController::class, 'filter']);
-
-    // DETAIL
-    Route::get('/detail/{id}', [DetailController::class, 'show']);
-
-    // DETAIL CARS FILTER POST
-    Route::post('/detail/filter', [DetailController::class, 'index']);
+    /**
+     * Car Routes
+     * GET  /api/v1/cars                - List/search cars
+     * GET  /api/v1/cars/meta           - Get filter metadata (types, capacities)
+     * POST /api/v1/cars/simple-filter  - Simple filter (type, capacity, price)
+     * POST /api/v1/cars/filter         - Filter cars with availability
+     * GET  /api/v1/cars/{car}          - Show car details
+     */
+    Route::get('/cars', [CarController::class, 'index']);
+    Route::get('/cars/meta', [CarController::class, 'meta']);
+    Route::post('/cars/simple-filter', [CarController::class, 'simpleFilter']);
+    Route::post('/cars/filter', [CarController::class, 'filter']);
+    Route::get('/cars/{car}', [CarController::class, 'show']);
 });

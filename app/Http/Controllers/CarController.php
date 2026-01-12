@@ -2,55 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\FilterCarRequest;
 use App\Http\Requests\FilterCarsRequest;
 use App\Http\Requests\GetCategoryRequest;
 use App\Models\Car;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
-class CategoryController extends Controller
+/**
+ * Controller for managing car resources.
+ *
+ * Handles car listing, searching, filtering, and retrieval operations.
+ */
+class CarController extends Controller
 {
     /**
-     * Get cars by name prefix.
+     * List cars or search by name prefix.
      *
-     * Searches for cars whose name starts with the given string.
-     *
-     * @param GetCategoryRequest $request The validated request containing the search name
-     *
-     * @return JsonResponse JSON response containing:
-     *                  - On success: Array of Car models matching the name prefix
-     *                  - Message: 'Fetched Cars Successfully.'
-     *
-     * @example Request:
-     * GET /api/categories?name=toyota
-     *
-     * @example Response:
-     * {
-     *     "success": true,
-     *     "data": [
-     *         { "id": 1, "name": "Toyota Camry", "type": "sedan", ... },
-     *         { "id": 2, "name": "Toyota Corolla", "type": "sedan", ... }
-     *     ],
-     *     "message": "Fetched Cars Successfully."
-     * }
-     *
-     * @throws \Illuminate\Validation\ValidationException When request validation fails
-     *
-     * @see \App\Models\Car
-     * @see \App\Http\Requests\GetCategoryRequest
+     * @param GetCategoryRequest $request
+     * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function index(GetCategoryRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $carName = isset($validated['name']) ?? '';
+        $carName = $validated['name'] ?? '';
         $records = Car::where('name', 'like', $carName . '%')->get();
-        return response()->success($records, 'Fetched Cars Successfully.');
+
+        return response()->success($records, 'Cars retrieved successfully.');
     }
+
     /**
-     * Get sidebar data for cars categories like (types, capacity)
+     * Get a specific car by ID.
+     *
+     * @param Car $car
      * @return JsonResponse
      */
-    public function data(): JsonResponse
+    public function show(Car $car): JsonResponse
+    {
+        return response()->success($car, 'Car retrieved successfully.');
+    }
+
+    /**
+     * Get filter metadata (types and capacities with counts).
+     *
+     * @return JsonResponse
+     */
+    public function meta(): JsonResponse
     {
         $types = ['sport', 'suv', 'mpv', 'sedan', 'coupe', 'hatchback'];
         $capacities = ['2', '4', '6', '8'];
@@ -70,50 +68,55 @@ class CategoryController extends Controller
 
         $data = [
             'types' => collect($types)->map(
-                fn($type) => [$type => $typeCounts[$type]] ?? [$type => 0]
+                fn($type) => [$type => $typeCounts[$type] ?? 0]
             )->values(),
-
             'capacities' => collect($capacities)->map(
-                fn($cap) => [$cap => $capacityCounts[$cap]] ?? [$cap => 0]
+                fn($cap) => [$cap => $capacityCounts[$cap] ?? 0]
             )->values(),
         ];
 
-        return response()->success($data, 'Retrived sidebar data Successfully');
+        return response()->success($data, 'Filter metadata retrieved successfully.');
+    }
+
+    /**
+     * Simple filter for cars based on type, capacity, and price.
+     *
+     * Filters are applied conditionally - only when the corresponding
+     * parameter is provided. Type filtering is case-insensitive.
+     *
+     * @param FilterCarRequest $request
+     * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function simpleFilter(FilterCarRequest $request): JsonResponse
+    {
+        $cars = Car::query()
+            ->when(
+                $request->validated('type'),
+                fn($query, $type) => $query->whereRaw(
+                    'LOWER(type) IN (' . implode(',', array_fill(0, count($type), '?')) . ')',
+                    array_map('strtolower', $type)
+                )
+            )
+            ->when(
+                $request->validated('capacity'),
+                fn($query, $capacity) => $query->whereIn('capacity', $capacity)
+            )
+            ->when(
+                $request->validated('price'),
+                fn($query, $price) => $query->where('dailyPrice', '<=', $price)
+            )
+            ->get();
+
+        return response()->success($cars, 'Cars filtered successfully.');
     }
 
     /**
      * Filter available cars based on pickup/drop-off criteria and optional filters.
      *
-     * This endpoint allows users to search for available cars by specifying:
-     * - Pickup and/or drop-off location and datetime
-     * - Vehicle type preferences (e.g., SUV, sedan)
-     * - Seating capacity requirements
-     * - Maximum daily price
-     *
-     * The availability check ensures no overlapping reservations exist for the requested period.
-     *
-     * @param FilterCarsRequest $request The validated request containing filter parameters
-     *
-     * @return JsonResponse JSON response containing:
-     *                  - On success: Array of available Car models matching the criteria
-     *                  - Message: 'Retrieved cars after applying filters successfully.'
-     *
-     * @example Request body pick|drop is required:
-     * {
-     *     "data": {
-     *         "pick": { "location": "cairo", "datetime": "2026-01-15 10:00" }, 
-     *         "drop": { "location": "cairo", "datetime": "2026-01-20 10:00" }
-     *     },
-     *     "type": ["suv", "sedan"], //optional
-     *     "capacity": [4, 6], //optional
-     *     "price": 100 //optional
-     * }
-     *
-     * @throws \Illuminate\Validation\ValidationException When request validation fails
-     *
-     * @see \App\Models\Car
-     * @see \App\Models\Reservation
-     * @see \App\Http\Requests\FilterCarsRequest
+     * @param FilterCarsRequest $request
+     * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function filter(FilterCarsRequest $request): JsonResponse
     {
@@ -175,6 +178,6 @@ class CategoryController extends Controller
 
         $cars = $query->get();
 
-        return response()->success($cars, 'Retrieved cars after applying filters successfully.');
+        return response()->success($cars, 'Cars filtered successfully.');
     }
 }
