@@ -32,8 +32,8 @@ class ReservationFactory extends Factory
         return [
             'car_id' => Car::factory(),
             'user_id' => User::factory(),
-            'pick' => fake()->city(),
-            'drop' => fake()->city(),
+            'pick_location' => strtolower(fake()->city()),
+            'drop_location' => strtolower(fake()->city()),
             'start_time' => $startTime,
             'end_time' => $endTime,
         ];

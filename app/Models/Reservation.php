@@ -12,8 +12,8 @@ class Reservation extends Model
     protected $fillable = [
         'car_id',
         'user_id',
-        'pick',
-        'drop',
+        'pick_location',
+        'drop_location',
         'start_time',
         'end_time',
     ];

@@ -17,8 +17,8 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->foreign('car_id')->references('id')->on('cars')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->string('pick');
-            $table->string('drop');
+            $table->string('pick_location');
+            $table->string('drop_location');
             $table->dateTime('start_time');
             $table->dateTime('end_time');
             $table->timestamps();

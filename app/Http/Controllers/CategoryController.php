@@ -1,111 +1,180 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Validator;
+
+use App\Http\Requests\FilterCarsRequest;
+use App\Http\Requests\GetCategoryRequest;
 use App\Models\Car;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    public function index(Request $request){
-        $validation = Validator::make($request->all(),[
-            'name' => ['string','max:25']
-        ]);
-        if($validation->fails()){
-            return response()->json([
-                'message' => 'validation failed',
-                'errors' => $validation->errors(),
-            ]);
-        } 
-        return Car::where('name', 'like', $request->name . '%')->get();
-        
-    } 
-    public function data(){
-        $types = ['sport','suv','mpv','sedan','coupe','hatchback'];
-        $capacities = ['2','4','6','8'];
-        $typesCount = [];
-        $capacitiesCount = [];
-        //DATA
-        $DATA = [];
-        foreach($types as $t){
-            array_push($typesCount, Car::where('model', $t)->count());
-        }
-        foreach($capacities as $c){
-            array_push($capacitiesCount, Car::where('capacity', $c)->count());
-        }
-        array_push($DATA, $typesCount, $capacitiesCount);
-        return $DATA;
+    /**
+     * Get cars by name prefix.
+     *
+     * Searches for cars whose name starts with the given string.
+     *
+     * @param GetCategoryRequest $request The validated request containing the search name
+     *
+     * @return JsonResponse JSON response containing:
+     *                  - On success: Array of Car models matching the name prefix
+     *                  - Message: 'Fetched Cars Successfully.'
+     *
+     * @example Request:
+     * GET /api/categories?name=toyota
+     *
+     * @example Response:
+     * {
+     *     "success": true,
+     *     "data": [
+     *         { "id": 1, "name": "Toyota Camry", "type": "sedan", ... },
+     *         { "id": 2, "name": "Toyota Corolla", "type": "sedan", ... }
+     *     ],
+     *     "message": "Fetched Cars Successfully."
+     * }
+     *
+     * @throws \Illuminate\Validation\ValidationException When request validation fails
+     *
+     * @see \App\Models\Car
+     * @see \App\Http\Requests\GetCategoryRequest
+     */
+    public function index(GetCategoryRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $carName = isset($validated['name']) ?? '';
+        $records = Car::where('name', 'like', $carName . '%')->get();
+        return response()->success($records, 'Fetched Cars Successfully.');
     }
-    public function filter(Request $request){
-        $req_length = count($request->data);
-        if($req_length > 0)
-        {
-            if($req_length == 1) {
-                // pick or drop
-                //pick
-                if(array_key_exists('pick', $request->data[0])){ 
-                    // start time filter not between database start , end 
-                    $pick_location = strtolower($request->data[0]['pick']['location']);
+    /**
+     * Get sidebar data for cars categories like (types, capacity)
+     * @return JsonResponse
+     */
+    public function data(): JsonResponse
+    {
+        $types = ['sport', 'suv', 'mpv', 'sedan', 'coupe', 'hatchback'];
+        $capacities = ['2', '4', '6', '8'];
 
-                    $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
-                    $cars_after_filter = Car::whereHas(
-                        'reservations',
-                        function ($query) use ($pick_date_time, $pick_location) {
-                            $query->where('start_time', '>', $pick_date_time);
-                            $query->orWhere('end_time', '<', $pick_date_time);
-                            $query->where('pick', $pick_location);
-                        }
-                    )
-                    ->whereIn('model', $request->type)
-                    ->whereIn('capacity', $request->capacity)
-                    ->where('dailyPrice', '<=', $request->price)
-                    ->get();
-                    return $cars_after_filter;
-                }
-                //drop
-                else{
-                    $drop_location = strtolower($request->data[0]['drop']['location']);
-                    $drop_date_time = carbon::parse($request->data[0]['drop']['date'] . $request->data[0]['drop']['time']);
-                    $cars_after_filter = Car::whereHas(
-                        'reservations',
-                        function ($query) use ($drop_date_time, $drop_location) {
-                            $query->where('start_time', '>', $drop_date_time);
-                            $query->orWhere('end_time', '<', $drop_date_time);
-                            $query->where('drop', $drop_location);
-                        }
-                    )
-                    ->whereIn('model', $request->type)
-                    ->whereIn('capacity', $request->capacity)
-                    ->where('dailyPrice', '<=', $request->price)
-                    ->get();
-                    return $cars_after_filter;
-                }
-            }
-            elseif($req_length==2){
-                // both
-                $pick_location = strtolower($request->data[0]['pick']['location']);
-                $drop_location = strtolower($request->data[1]['drop']['location']);
-                $pick_date_time = carbon::parse($request->data[0]['pick']['date'] . $request->data[0]['pick']['time']);
-                $drop_date_time = carbon::parse($request->data[1]['drop']['date'] . $request->data[1]['drop']['time']);
+        $typeCounts = Car::selectRaw('LOWER(type) as type, COUNT(*) as count')
+            ->whereRaw(
+                'LOWER(type) IN (' . implode(',', array_fill(0, count($types), '?')) . ')',
+                $types
+            )
+            ->groupByRaw('LOWER(type)')
+            ->pluck('count', 'type');
 
-                $cars_after_filter = Car::whereHas(
-                    'reservations',
-                    function ($query) use ($pick_date_time, $drop_date_time, $pick_location, $drop_location) {
-                        $query->where('start_time', '>', $pick_date_time)->where('start_time', '>', $drop_date_time);
-                        $query->orWhere('end_time', '<', $pick_date_time)->where('end_time', '<', $drop_date_time);
-                        $query->where('pick', $pick_location);
-                        $query->where('drop', $drop_location);
-                    }
-                )
-                ->whereIn('model', $request->type)
-                ->whereIn('capacity', $request->capacity)
-                ->where('dailyPrice', '<=', $request->price)
-                ->get();
-                return $cars_after_filter;
-            }
+        $capacityCounts = Car::selectRaw('capacity, COUNT(*) as count')
+            ->whereIn('capacity', $capacities)
+            ->groupBy('capacity')
+            ->pluck('count', 'capacity');
+
+        $data = [
+            'types' => collect($types)->map(
+                fn($type) => [$type => $typeCounts[$type]] ?? [$type => 0]
+            )->values(),
+
+            'capacities' => collect($capacities)->map(
+                fn($cap) => [$cap => $capacityCounts[$cap]] ?? [$cap => 0]
+            )->values(),
+        ];
+
+        return response()->success($data, 'Retrived sidebar data Successfully');
+    }
+
+    /**
+     * Filter available cars based on pickup/drop-off criteria and optional filters.
+     *
+     * This endpoint allows users to search for available cars by specifying:
+     * - Pickup and/or drop-off location and datetime
+     * - Vehicle type preferences (e.g., SUV, sedan)
+     * - Seating capacity requirements
+     * - Maximum daily price
+     *
+     * The availability check ensures no overlapping reservations exist for the requested period.
+     *
+     * @param FilterCarsRequest $request The validated request containing filter parameters
+     *
+     * @return JsonResponse JSON response containing:
+     *                  - On success: Array of available Car models matching the criteria
+     *                  - Message: 'Retrieved cars after applying filters successfully.'
+     *
+     * @example Request body pick|drop is required:
+     * {
+     *     "data": {
+     *         "pick": { "location": "cairo", "datetime": "2026-01-15 10:00" }, 
+     *         "drop": { "location": "cairo", "datetime": "2026-01-20 10:00" }
+     *     },
+     *     "type": ["suv", "sedan"], //optional
+     *     "capacity": [4, 6], //optional
+     *     "price": 100 //optional
+     * }
+     *
+     * @throws \Illuminate\Validation\ValidationException When request validation fails
+     *
+     * @see \App\Models\Car
+     * @see \App\Models\Reservation
+     * @see \App\Http\Requests\FilterCarsRequest
+     */
+    public function filter(FilterCarsRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $data = $validated['data'] ?? [];
+
+        $pick = $data['pick'] ?? null;
+        $drop = $data['drop'] ?? null;
+
+        $query = Car::query();
+
+        // Apply reservation availability filter
+        if ($pick && $drop) {
+            $pickDateTime = Carbon::parse($pick['datetime']);
+            $dropDateTime = Carbon::parse($drop['datetime']);
+            $pickLocation = strtolower($pick['location']);
+            $dropLocation = strtolower($drop['location']);
+
+            $query->whereDoesntHave('reservations', function ($q) use ($pickDateTime, $dropDateTime, $pickLocation, $dropLocation) {
+                $q->where('start_time', '<', $dropDateTime)
+                    ->where('end_time', '>', $pickDateTime)
+                    ->where('pick_location', $pickLocation)
+                    ->where('drop_location', $dropLocation);
+            });
+        } elseif ($pick) {
+            $pickDateTime = Carbon::parse($pick['datetime']);
+            $pickLocation = strtolower($pick['location']);
+
+            $query->whereDoesntHave('reservations', function ($q) use ($pickDateTime, $pickLocation) {
+                $q->where('start_time', '<=', $pickDateTime)
+                    ->where('end_time', '>=', $pickDateTime)
+                    ->where('pick_location', $pickLocation);
+            });
+        } elseif ($drop) {
+            $dropDateTime = Carbon::parse($drop['datetime']);
+            $dropLocation = strtolower($drop['location']);
+
+            $query->whereDoesntHave('reservations', function ($q) use ($dropDateTime, $dropLocation) {
+                $q->where('start_time', '<=', $dropDateTime)
+                    ->where('end_time', '>=', $dropDateTime)
+                    ->where('drop_location', $dropLocation);
+            });
         }
-        // maybe no validation required here
-        return car::whereIn('model', $request->type)->whereIn('capacity', $request->capacity)->where('dailyPrice', '<=', $request->price)->get();
+
+        // Apply optional type filter
+        if (!empty($validated['type'])) {
+            $query->whereIn('type', $validated['type']);
+        }
+
+        // Apply optional capacity filter
+        if (!empty($validated['capacity'])) {
+            $query->whereIn('capacity', $validated['capacity']);
+        }
+
+        // Apply optional price filter
+        if (!empty($validated['price'])) {
+            $query->where('dailyPrice', '<=', $validated['price']);
+        }
+
+        $cars = $query->get();
+
+        return response()->success($cars, 'Retrieved cars after applying filters successfully.');
     }
 }
