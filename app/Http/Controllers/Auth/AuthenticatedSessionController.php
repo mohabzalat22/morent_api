@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 class AuthenticatedSessionController extends Controller
@@ -13,23 +13,47 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request)
+    public function store(LoginRequest $request): JsonResponse
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
 
-        $request->session()->regenerate();
+            $user = $request->user();
+            $token = $user->createToken('token');
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token->plainTextToken
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Invalid credentials',
+                'errors' => $e->errors()
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Login failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Destroy an authenticated session.
+     * Destroy an authenticated session (revoke the current token).
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
+        try {
+            $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
+            return response()->json([
+                'message' => 'Logged out successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Logout failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

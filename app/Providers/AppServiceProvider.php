@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
         Response::macro('error', function (string $message = 'Error', int $code = 200, $errors = null) {
             return response()->json(
                 [
-                    'success' => true,
+                    'success' => false,
                     'message' => $message,
                     'errors' => $errors
                 ],
