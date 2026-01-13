@@ -1,0 +1,638 @@
+{
+	"info": {
+		"_postman_id": "7d75c5eb-40b5-46e5-83b0-e34a468cffe0",
+		"name": "morent-api-v1.1.0",
+		"description": "this is a simple car rental service made using php laravel and vue js we need to migrate it to the latest api edition for laravel and front end we would use react.js",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "32207697",
+		"_collection_link": "https://mohabs-team.postman.co/workspace/morent~2c43c932-d473-45e5-8cd4-66374916534d/collection/32207697-7d75c5eb-40b5-46e5-83b0-e34a468cffe0?action=share&source=collection_link&creator=32207697"
+	},
+	"item": [
+		{
+			"name": "private api",
+			"item": [
+				{
+					"name": "profile",
+					"item": [
+						{
+							"name": "profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/profile"
+							},
+							"response": []
+						},
+						{
+							"name": "profile update",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"mohab22\",\n    \"email\": \"mohabzalat20@gmail.com\",\n    \"image\": \"image.png\",\n    \"email_verified_at\": \"2026-01-12T22:26:12.000000Z\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{url}}/api/{{version}}/profile"
+							},
+							"response": []
+						},
+						{
+							"name": "profile Delete",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"password\": \"QAZqaz123456\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{url}}/api/{{version}}/profile"
+							},
+							"response": []
+						},
+						{
+							"name": "user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/user"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "reservations",
+					"item": [
+						{
+							"name": "get reservations",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": "{{url}}/api/{{version}}}}/reservations"
+							},
+							"response": []
+						},
+						{
+							"name": "create a reservation",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"car_id\" : 1,\n    \"pick_location\": \"alexandria\",\n    \"drop_location\": \"cairo\",\n    \"start_time\": \"2026-01-19 10:00\",\n    \"end_time\": \"2026-01-20 10:00\"\n}"
+								},
+								"url": "{{url}}/api/{{version}}reservations"
+							},
+							"response": []
+						},
+						{
+							"name": "get reservation by id",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": "{{url}}/api/{{version}}/reservations/1"
+							},
+							"response": []
+						},
+						{
+							"name": "update reservation",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"car_id\" : 3,\n    \"pick_location\": \"alexandria\",\n    \"drop_location\": \"cairo\",\n    \"start_time\": \"2026-01-19 10:00\",\n    \"end_time\": \"2026-01-20 10:00\"\n}"
+								},
+								"url": "{{url}}/api/{{version}}/reservations/2"
+							},
+							"response": []
+						},
+						{
+							"name": "delete reservation",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/reservations/2"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "car reviews",
+					"item": [
+						{
+							"name": "get car review by car id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/cars/1/reviews"
+							},
+							"response": []
+						},
+						{
+							"name": "create car review",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"review\": \"this is review edit\",\n    \"stars\":5\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{url}}/api/{{version}}/cars/1/reviews"
+							},
+							"response": []
+						},
+						{
+							"name": "get review for specific car using car_id, review_id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/cars/1/reviews/1"
+							},
+							"response": []
+						},
+						{
+							"name": "update review by car_id and user_id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"review\":\"mohab\",\n    \"stars\": 3\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{url}}/api/{{version}}/cars/1/reviews/1"
+							},
+							"response": []
+						},
+						{
+							"name": "delete review by car id and review id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "Bearer {{token}}"
+									}
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": "{{url}}/api/{{version}}/cars/1/reviews/1"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "public api",
+			"item": [
+				{
+					"name": "authentication",
+					"item": [
+						{
+							"name": "login",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": ""
+									}
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-XSRF-TOKEN",
+										"value": "eyJpdiI6IlFtL2RybDRPVmdHNTlzSmIvSW15Q2c9PSIsInZhbHVlIjoiUS9na284ZGt1T0dkbUloQjVaZEFPVmhwcm1aYnZFUlJZQ0NmY0t5dTNsU0ZUdHlkYkdaZ2dCSGRDZXZwbXJ1dGJ4N3k0TWpSSGZaZldLdTErWmthcmJpR3lRR21XUkVMWFdpdGZkMTJPTVlrSy9ZMWU0TGh1REVEbHgzNG1IbisiLCJtYWMiOiI3NWQ5ZGFjZDVhYmI1ZDc0NzU5NDc2OTdkM2Y4MDAxMjM1MmU4MGVjODkxYjk2ZDc0ZDFmNzFjYzIzYWVlYWE4IiwidGFnIjoiIn0",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "name",
+											"value": "mohab",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "mohabzalat20@gmail.com",
+											"type": "text"
+										},
+										{
+											"key": "password",
+											"value": "QAZqaz123456",
+											"type": "text"
+										}
+									]
+								},
+								"url": "{{url}}/api/{{version}}/login"
+							},
+							"response": []
+						},
+						{
+							"name": "register",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {
+									"accept": true
+								}
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/javascript",
+										"type": "text"
+									},
+									{
+										"key": "X-XSRF-TOKEN",
+										"value": "eyJpdiI6ImFkU1FiaDgvWXRHSlg1RklWci90RlE9PSIsInZhbHVlIjoicjg4bWtrMFQvUFNQZmdYa3NxWHd4SGdqMU9vUDROcHBZb3U0Y3pBaDM4Wk5nRlhmakNsWVI3ekN5c09hOEgyTEZmdVZLRFVMTDUyRHFDQloxdjA3TzJMT2tGWkNyZjQ1QjVBdmZHSVV0Q0UzK2hXTWRMUDZkTkxOKzR3MXl4Z2oiLCJtYWMiOiI2OWJmMDhlN2MyYTBhZGM3MGQ2ZWRiMWEwODRlYTk1MTJlMmVhMWE2YmY5NGNiMmM1YmNkYjBmMGU1MTNhMjkyIiwidGFnIjoiIn0",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "name",
+											"value": "mohab",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "mohabzalat20@gmail.com",
+											"type": "text"
+										},
+										{
+											"key": "password",
+											"value": "QAZqaz123456",
+											"type": "text"
+										},
+										{
+											"key": "password_confirmation",
+											"value": "QAZqaz123456",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{url}}/api/{{version}}register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"api",
+										"{{version}}register"
+									],
+									"query": [
+										{
+											"key": "name",
+											"value": "mohab",
+											"disabled": true
+										},
+										{
+											"key": "email",
+											"value": "mohabzalat20@gmail.com",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "csrf",
+					"request": {
+						"method": "HEAD",
+						"header": [],
+						"url": "{{url}}/sanctum/csrf-cookie"
+					},
+					"response": []
+				},
+				{
+					"name": "cars (can be filtered by name)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": {
+								"token": ""
+							}
+						},
+						"method": "GET",
+						"header": [],
+						"url": "{{url}}/api/{{version}}/cars"
+					},
+					"response": []
+				},
+				{
+					"name": "cars meta data (sidebar data)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{url}}/api/{{version}}/cars/meta"
+					},
+					"response": []
+				},
+				{
+					"name": "cars filter with pick and drop locations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "// Full filter with pick & drop\n{\n    \"data\": {\n        \"pick\": { \"location\": \"cairo\", \"datetime\": \"2026-01-15 10:00\" },\n        \"drop\": { \"location\": \"cairo\", \"datetime\": \"2026-01-20 10:00\" }\n    },\n    \"type\": [\"suv\", \"sedan\"],\n    \"capacity\": [4, 6],\n    \"price\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{url}}/api/{{version}}/cars/filter"
+					},
+					"response": []
+				},
+				{
+					"name": "car detail using id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{url}}/api/{{version}}/detail/1"
+					},
+					"response": []
+				},
+				{
+					"name": "simple cars details filter",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": [\"suv\", \"sedan\"],\n    \"capacity\": [4, 6],\n    \"price\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{url}}/api/{{version}}/cars/simple-filter"
+					},
+					"response": []
+				},
+				{
+					"name": "home",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "// Full filter with pick & drop\n{\n    \"data\": {\n        \"pick\": { \"location\": \"cairo\", \"datetime\": \"2026-01-15 10:00\" },\n        \"drop\": { \"location\": \"cairo\", \"datetime\": \"2026-01-20 10:00\" }\n    },\n    \"type\": [\"suv\", \"sedan\"],\n    \"capacity\": [4, 6],\n    \"price\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{url}}/api/{{version}}/"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
