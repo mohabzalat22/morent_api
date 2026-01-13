@@ -30,12 +30,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', fn(Request $request) => $request->user());
 
     /**
-     * Profile Routes
+     * Profile Routes for authenticated user
      * GET    /api/profile - Show profile
      * PUT    /api/profile - Update profile
      * DELETE /api/profile - Delete profile
      */
-    Route::apiResource('profile', ProfileController::class)->only(['show', 'update', 'destroy']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile', [ProfileController::class, 'destroy']);
 
     /**
      * Reservation Routes
@@ -44,23 +46,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
      * GET    /api/reservations/{id}      - Show reservation
      * PUT    /api/reservations/{id}      - Update reservation
      * DELETE /api/reservations/{id}      - Delete reservation
+     * 
+     * Authorization: Users can only access/modify their own reservations (ReservationPolicy)
      */
-    Route::apiResource('reservations', ReservationController::class);
+    Route::apiResource('reservations', ReservationController::class)->parameter('reservations', 'id');
 
-    /**
+    /*
      * Review Routes (nested under cars)
-     * GET  /api/cars/{car}/reviews - List reviews for a car
-     * POST /api/cars/{car}/reviews - Create review for a car
+     * GET    /api/cars/{car_id}/reviews             - List reviews for a car
+     * POST   /api/cars/{car_id}/reviews             - Create review for a car
+     * GET    /api/cars/{car_id}/reviews/{review_id} - Show review
+     * PUT    /api/cars/{car_id}/reviews/{review_id} - Update review
+     * DELETE /api/cars/{car_id}/reviews/{review_id} - Delete review
+     * 
+     * Authorization: Users can only update/delete their own reviews (ReviewPolicy)
      */
-    Route::apiResource('cars.reviews', ReviewController::class)->only(['index', 'store']);
-
-    /**
-     * Review Routes (standalone)
-     * GET    /api/reviews/{id} - Show review
-     * PUT    /api/reviews/{id} - Update review
-     * DELETE /api/reviews/{id} - Delete review
-     */
-    Route::apiResource('reviews', ReviewController::class)->only(['show', 'update', 'destroy']);
+    Route::apiResource('cars.reviews', ReviewController::class)->parameters([
+        'cars' => 'car_id',
+        'reviews' => 'review_id'
+    ]);
 });
 
 /*

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateReservationRequest extends FormRequest
 {
@@ -11,9 +13,7 @@ class UpdateReservationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $reservation = $this->route('reservation');
-
-        return $reservation->user_id === $this->user()->id;
+        return true;
     }
 
     /**
@@ -22,6 +22,7 @@ class UpdateReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'car_id' => ['sometimes', 'integer', 'min:1', 'exists:cars,id'],
             'pick_location' => ['sometimes', 'string', 'max:255'],
             'drop_location' => ['sometimes', 'string', 'max:255'],
             'start_time' => ['sometimes', 'date', 'after_or_equal:now'],
@@ -38,5 +39,17 @@ class UpdateReservationRequest extends FormRequest
             'start_time.after_or_equal' => 'Start time must be now or in the future.',
             'end_time.after' => 'End time must be after the start time.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->error('Validation failed', 422, $validator->errors())
+        );
     }
 }

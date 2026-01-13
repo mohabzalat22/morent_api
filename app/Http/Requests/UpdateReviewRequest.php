@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateReviewRequest extends FormRequest
 {
@@ -11,9 +13,7 @@ class UpdateReviewRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $review = $this->route('review');
-
-        return $review->user_id === $this->user()->id;
+        return true;
     }
 
     /**
@@ -22,8 +22,8 @@ class UpdateReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'review' => ['sometimes', 'string', 'min:1'],
-            'stars' => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'review' => ['string', 'min:1', 'required_without:stars'],
+            'stars' => ['integer', 'min:1', 'max:5', 'required_without:review'],
         ];
     }
 
@@ -36,6 +36,20 @@ class UpdateReviewRequest extends FormRequest
             'review.min' => 'Review must be provided.',
             'stars.min' => 'Rating must be at least 1 star.',
             'stars.max' => 'Rating cannot exceed 5 stars.',
+            'review.required_without' => 'You must provide either a review or a star rating.',
+            'stars.required_without' => 'You must provide either a star rating or a review.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->error('Validation failed', 422, $validator->errors())
+        );
     }
 }

@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreReviewRequest extends FormRequest
 {
@@ -11,7 +14,7 @@ class StoreReviewRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /**
@@ -40,5 +43,17 @@ class StoreReviewRequest extends FormRequest
             'stars.min' => 'Rating must be at least 1 star.',
             'stars.max' => 'Rating cannot exceed 5 stars.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->error('Validation failed', 422, $validator->errors())
+        );
     }
 }

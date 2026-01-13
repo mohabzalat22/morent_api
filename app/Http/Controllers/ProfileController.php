@@ -11,15 +11,17 @@ class ProfileController extends Controller
     /**
      * Get the authenticated user's profile.
      */
-    public function show(Request $request): JsonResponse
+    public function show(): JsonResponse
     {
-        $user = $request->user();
+        $user = auth()->user();
 
         return response()->success($user, 'Profile retrieved successfully.');
     }
 
     /**
      * Update the user's profile information.
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
      */
     public function update(ProfileUpdateRequest $request): JsonResponse
     {

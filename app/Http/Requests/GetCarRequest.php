@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class GetCategoryRequest extends FormRequest
+class GetCarRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,7 @@ class GetCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['string', 'max:25', ]
+            'name' => ['string', 'max:25',]
         ];
     }
 

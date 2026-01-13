@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreReservationRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class StoreReservationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /**
@@ -45,5 +47,17 @@ class StoreReservationRequest extends FormRequest
             'end_time.required' => 'Please provide an end time.',
             'end_time.after' => 'End time must be after the start time.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->error('Validation failed', 422, $validator->errors())
+        );
     }
 }

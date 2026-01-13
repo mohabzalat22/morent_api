@@ -5,6 +5,8 @@ namespace App\Http\Requests\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class RegisterRequest extends FormRequest
 {
@@ -45,5 +47,16 @@ class RegisterRequest extends FormRequest
             'password.required' => 'Password is required',
             'password.confirmed' => 'Password confirmation does not match',
         ];
+    }
+    /**
+     * Throws http exception with errors for invalid request
+     * @param Validator $validator
+     * @return void
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->error('Validation failed', 422, $validator->errors())
+        );
     }
 }

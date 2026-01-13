@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\DestroyReservationRequest;
-use App\Http\Requests\ShowReservationRequest;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 use App\Models\Reservation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Access\AuthorizationException;
+use Throwable;
 
 class ReservationController extends Controller
 {
@@ -28,16 +28,23 @@ class ReservationController extends Controller
     /**
      * Get a specific reservation.
      *
-     * @param ShowReservationRequest 
-     * @param Reservation 
+     * @param Request 
+     * @param int $id 
      * @return JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
      */
-    public function show(ShowReservationRequest $request, Reservation $reservation): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $data = $reservation->load('car');
+        try {
+            $reservation = Reservation::with('car')->findOrFail($id);
+            
+            $this->authorize('view', $reservation);
 
-        return response()->success($data, 'Reservation retrieved successfully.');
+            return response()->success($reservation, 'Reservation retrieved successfully.');
+        } catch (AuthorizationException $e) {
+            return response()->error('You are not authorized to view this reservation.', 403);
+        } catch (Throwable $e) {
+            return response()->error("Failed to Retrieve reservation with id: $id", 404, [$e->getMessage()]);
+        }
     }
 
     /**
@@ -59,30 +66,48 @@ class ReservationController extends Controller
      * Update an existing reservation.
      *
      * @param UpdateReservationRequest
-     * @param Reservation
+     * @param int $id
      * @return JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Illuminate\Validation\ValidationException | \Throwable
      */
-    public function update(UpdateReservationRequest $request, Reservation $reservation): JsonResponse
+    public function update(UpdateReservationRequest $request, int $id): JsonResponse
     {
-        $reservation->update($request->validated());
-        $data = $reservation->load('car');
+        try {
+            $reservation = Reservation::findOrFail($id);
+            
+            $this->authorize('update', $reservation);
 
-        return response()->success($data, 'Reservation updated successfully.');
+            $reservation->update($request->validated());
+            $data = $reservation->refresh()->load('car');
+            return response()->success($data, 'Reservation updated successfully.');
+        } catch (AuthorizationException $e) {
+            return response()->error('You are not authorized to update this reservation.', 403);
+        } catch (Throwable $e) {
+            return response()->error('Can not Update unResolved Reservation', 404);
+        }
     }
 
     /**
      * Delete a reservation.
      *
-     * @param DestroyReservationRequest
-     * @param Reservation
+     * @param int $id
      * @return JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws Throwable
      */
-    public function destroy(DestroyReservationRequest $request, Reservation $reservation): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $reservation->delete();
-
-        return response()->success(null, 'Reservation deleted successfully.');
+        try {
+            $reservation = Reservation::findOrFail($id);
+            
+            $this->authorize('delete', $reservation);
+            
+            $reservation->delete();
+            return response()->success(null, 'Reservation deleted successfully.');
+        } catch (AuthorizationException $e) {
+            return response()->error('You are not authorized to delete this reservation.', 403);
+        } catch (Throwable $e) {
+            return response()->error('Can not delete un Resolved Reservation.', 404);
+        }
     }
 }
+

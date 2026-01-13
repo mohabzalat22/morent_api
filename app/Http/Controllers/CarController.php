@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\FilterCarRequest;
 use App\Http\Requests\FilterCarsRequest;
-use App\Http\Requests\GetCategoryRequest;
+use App\Http\Requests\GetCarRequest;
 use App\Models\Car;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,11 +19,11 @@ class CarController extends Controller
     /**
      * List cars or search by name prefix.
      *
-     * @param GetCategoryRequest $request
+     * @param GetCarRequest $request
      * @return JsonResponse
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function index(GetCategoryRequest $request): JsonResponse
+    public function index(GetCarRequest $request): JsonResponse
     {
         $validated = $request->validated();
         $carName = $validated['name'] ?? '';
