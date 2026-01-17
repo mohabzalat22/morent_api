@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProfileController extends Controller
 {
@@ -13,7 +15,16 @@ class ProfileController extends Controller
      */
     public function show(): JsonResponse
     {
-        $user = auth()->user();
+        $auth_user = auth()->user();
+        try {
+            $user = User::where('id', $auth_user->id)->firstOrFail();
+            $user->load(['reservations', 'reviews']);
+        } catch (ModelNotFoundException $e) {
+            return response()->error(null, 'User profile not found for user with id: ' . ($auth_user->id ?? 'unknown'), 404);
+        } catch (\Throwable $e) {
+            return response()->error('Failed to retrieve profile due to an unexpected error.', 500);
+        }
+
 
         return response()->success($user, 'Profile retrieved successfully.');
     }
