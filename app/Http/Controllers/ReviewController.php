@@ -22,7 +22,7 @@ class ReviewController extends Controller
     public function index(int $car_id): JsonResponse
     {
         try {
-            $car = Car::firstOrFail($car_id);
+            $car = Car::where('id', $car_id)->firstOrFail();
             $reviews = $car->reviews()->with('user')->get();
             return response()->success($reviews, 'Reviews retrieved successfully.');
         } catch (ModelNotFoundException $e) {
@@ -65,7 +65,7 @@ class ReviewController extends Controller
     public function store(StoreReviewRequest $request, int $car_id): JsonResponse
     {
         try {
-            $car = Car::firstOrFail($car_id);
+            $car = Car::where('id', $car_id)->firstOrFail();
             $review = $car->reviews()->create([
                 'user_id' => $request->user()->id,
                 'review' => $request->review,
