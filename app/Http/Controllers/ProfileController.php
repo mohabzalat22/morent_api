@@ -13,20 +13,33 @@ class ProfileController extends Controller
     /**
      * Get the authenticated user's profile.
      */
-    public function show(): JsonResponse
+    public function show(Request $request): JsonResponse
     {
+        $reservationsPage = (int) $request->query('reservations_page', 1);
+        $reviewsPage = (int) $request->query('reviews_page', 1);
+        $limit = (int) $request->query('limit', 10);
+
         $auth_user = auth()->user();
         try {
             $user = User::where('id', $auth_user->id)->firstOrFail();
-            $user->load(['reservations', 'reviews']);
+
+            // Paginate reservations
+            $reservations = $user->reservations()->orderByDesc('created_at')->paginate($limit, ['*'], 'reservations_page', $reservationsPage);
+
+            // Paginate reviews
+            $reviews = $user->reviews()->orderByDesc('created_at')->paginate($limit, ['*'], 'reviews_page', $reviewsPage);
+
+            // Prepare user data without relations
+            $userData = $user->toArray();
+            $userData['reservations'] = $reservations;
+            $userData['reviews'] = $reviews;
         } catch (ModelNotFoundException $e) {
             return response()->error(null, 'User profile not found for user with id: ' . ($auth_user->id ?? 'unknown'), 404);
         } catch (\Throwable $e) {
             return response()->error('Failed to retrieve profile due to an unexpected error.', 500);
         }
 
-
-        return response()->success($user, 'Profile retrieved successfully.');
+        return response()->success($userData, 'Profile retrieved successfully.');
     }
 
     /**
