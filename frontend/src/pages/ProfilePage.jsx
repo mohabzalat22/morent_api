@@ -6,10 +6,25 @@ import StarOutlineIcon from "../components/icons/StarOutlineIcon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext.jsx";
+import ReservationItem from "../components/ReservationItem";
+import ReviewItem from "../components/ReviewItem";
+import ConfirmModal from "../components/ConfirmModal";
 import { showToast } from "../utils/toast";
 
 function ProfilePage() {
     const { logout, user, refreshUser } = useAuth();
+    // Tab state
+    const [activeTab, setActiveTab] = useState("profile");
+    // Profile edit state
+    const [editName, setEditName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [editImage, setEditImage] = useState(null);
+    // Sync edit fields with user when user changes
+    useEffect(() => {
+        setEditName(user?.name || "");
+        setEditEmail(user?.email || "");
+    }, [user]);
+    const [isSaving, setIsSaving] = useState(false);
     // Pagination state
     const [reservations, setReservations] = useState({
         data: [],
@@ -29,6 +44,124 @@ function ProfilePage() {
     const [reviewsCars, setReviewsCars] = useState({});
     const [reservationsPage, setReservationsPage] = useState(1);
     const [reviewsPage, setReviewsPage] = useState(1);
+    // Modal state for account deletion
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    // Track deleting reservation/review
+    const [deletingReservationId, setDeletingReservationId] = useState(null);
+    const [deletingReviewId, setDeletingReviewId] = useState(null);
+    // Confirmation modal state
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        type: null,
+        id: null,
+    });
+    // Edit modal state (stub)
+    const [editReservationId, setEditReservationId] = useState(null);
+    const [editReviewId, setEditReviewId] = useState(null);
+    // Delete reservation (with modal)
+    const handleDeleteReservation = async (id) => {
+        setDeletingReservationId(id);
+        try {
+            const res = await api.delete(`/reservations/${id}`);
+            if (res.data.success) {
+                showToast(res.data);
+                setReservationsPage(1);
+            }
+        } catch (error) {
+            showToast(error, true);
+        }
+        setDeletingReservationId(null);
+        setConfirmModal({ open: false, type: null, id: null });
+    };
+
+    // Delete review (with modal)
+    const handleDeleteReview = async (id) => {
+        setDeletingReviewId(id);
+        try {
+            // Find the review item to get car_id
+            const review = reviews.data.find((r) => r.id === id);
+            if (!review) throw new Error("Review not found");
+            const carId = review.car_id;
+            const res = await api.delete(`/cars/${carId}/reviews/${id}`);
+            if (res.data.success) {
+                showToast(res.data);
+                setReviewsPage(1);
+            }
+        } catch (error) {
+            showToast(error, true);
+        }
+        setDeletingReviewId(null);
+        setConfirmModal({ open: false, type: null, id: null });
+    };
+
+    // Open edit modal (stub)
+    const handleEditReservation = (id) => {
+        setEditReservationId(id);
+        // TODO: Open reservation edit modal
+    };
+    // Edit modal state for reviews
+    const [editReviewModal, setEditReviewModal] = useState({
+        open: false,
+        id: null,
+        review: "",
+        stars: 1,
+    });
+
+    // Open edit modal for review
+    const handleEditReview = (id) => {
+        const review = reviews.data.find((r) => r.id === id);
+        if (!review) return;
+        setEditReviewModal({
+            open: true,
+            id,
+            review: review.review,
+            stars: review.stars,
+        });
+    };
+
+    // Submit review edit
+    const handleSubmitEditReview = async () => {
+        const { id, review, stars } = editReviewModal;
+        try {
+            const reviewItem = reviews.data.find((r) => r.id === id);
+            if (!reviewItem) throw new Error("Review not found");
+            const carId = reviewItem.car_id;
+            const res = await api.put(`/cars/${carId}/reviews/${id}`, {
+                review,
+                stars,
+            });
+            if (res.data.success) {
+                showToast(res.data);
+                setReviewsPage(1);
+                setEditReviewModal({
+                    open: false,
+                    id: null,
+                    review: "",
+                    stars: 1,
+                });
+            }
+        } catch (error) {
+            showToast(error, true);
+        }
+    };
+
+    // Delete account
+    const handleDeleteAccount = async () => {
+        setIsDeletingAccount(true);
+        try {
+            const res = await api.delete("/profile");
+            if (res.data.success) {
+                showToast(res.data);
+                await logout();
+                navigate("/register");
+            }
+        } catch (error) {
+            showToast(error, true);
+        }
+        setIsDeletingAccount(false);
+        setShowDeleteModal(false);
+    };
     const limit = 6; // Items per page
     const navigate = useNavigate();
 
@@ -118,32 +251,32 @@ function ProfilePage() {
         }
     };
 
-    const handleImageChange = async (e) => {
+    const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (file) setEditImage(file);
+    };
 
+    const handleProfileSave = async (e) => {
+        e.preventDefault();
+        setIsSaving(true);
         const formData = new FormData();
-        formData.append("image", file);
-        formData.append("name", user.name);
-        formData.append("email", user.email);
-        // Workaround for PHP/Laravel PUT with multi-part form data
+        formData.append("name", editName);
+        formData.append("email", editEmail);
+        if (editImage) formData.append("image", editImage);
         formData.append("_method", "PUT");
-
         try {
             const res = await api.post("/profile", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+                headers: { "Content-Type": "multipart/form-data" },
             });
-
             if (res.data.success) {
                 showToast(res.data);
                 await refreshUser();
             }
         } catch (error) {
-            console.error("Upload error:", error);
+            console.error("Profile update error:", error);
             showToast(error, true);
         }
+        setIsSaving(false);
     };
 
     return (
@@ -169,310 +302,400 @@ function ProfilePage() {
                                         </div>
                                     )}
                                 </div>
-                                <label
-                                    htmlFor="profile-image-upload"
-                                    className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200 mb-4"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        strokeWidth={1.5}
-                                        stroke="currentColor"
-                                        className="w-6 h-6"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
-                                        />
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"
-                                        />
-                                    </svg>
-                                </label>
-                                <input
-                                    type="file"
-                                    id="profile-image-upload"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                />
                             </div>
-                            <h2 className="text-xl font-bold mb-1 text-gray-800 dark:text-white">
-                                {user.name}
-                            </h2>
-                            <p className="text-gray-500 text-sm mb-6">
-                                {user.email}
-                            </p>
-                            <nav className="flex flex-col gap-2 w-full">
-                                <button className="w-full text-left px-4 py-2 rounded-lg bg-blue-50 text-blue-700 font-semibold">
-                                    Profile
+                            <div className="mt-2 text-center">
+                                <div className="font-bold text-lg text-gray-800 dark:text-gray-100">
+                                    {user.name}
+                                </div>
+                                <div className="text-gray-500 text-sm">
+                                    {user.email}
+                                </div>
+                            </div>
+                            <div className="mt-6 w-full flex flex-col gap-2">
+                                <button
+                                    className={`w-full px-4 py-2 rounded-lg font-bold shadow transition bg-blue-600 text-white hover:bg-blue-700`}
+                                    onClick={() => setActiveTab("profile")}
+                                >
+                                    Edit Profile
                                 </button>
-                                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-50 text-gray-700 dark:text-gray-200">
+                                <button
+                                    className={`w-full px-4 py-2 rounded-lg font-bold shadow transition bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600`}
+                                    onClick={() => setActiveTab("reservations")}
+                                >
                                     Reservations
                                 </button>
-                                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-50 text-gray-700 dark:text-gray-200">
+                                <button
+                                    className={`w-full px-4 py-2 rounded-lg font-bold shadow transition bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600`}
+                                    onClick={() => setActiveTab("reviews")}
+                                >
                                     Reviews
                                 </button>
-                                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-50 text-gray-700 dark:text-gray-200">
-                                    Payments
+                                <button
+                                    className="w-full px-4 py-2 rounded-lg font-bold shadow transition bg-red-600 text-white hover:bg-red-700 mt-2"
+                                    onClick={() => setShowDeleteModal(true)}
+                                >
+                                    Delete Account
                                 </button>
-                            </nav>
+                                <button
+                                    className="w-full px-4 py-2 rounded-lg font-bold shadow transition bg-gray-300 text-gray-700 hover:bg-gray-400 mt-2"
+                                    onClick={handleLogout}
+                                >
+                                    Logout
+                                </button>
+                            </div>
                         </>
                     )}
-                    <div className="mt-8 flex flex-col gap-2 w-full">
-                        <Link to="/">
-                            <button className="w-full bg-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-                                Home
-                            </button>
-                        </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold px-4 py-2 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                        >
-                            Log out
-                        </button>
-                    </div>
                 </aside>
                 {/* Main Content */}
                 <main className="flex-1 flex flex-col gap-8">
-                    {/* Reservations Section */}
-                    <section>
-                        <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
-                            Reservations
-                        </h3>
-                        <div className="space-y-4">
-                            {reservations.data.length === 0 ? (
-                                <div className="text-gray-400">
-                                    No reservations found.
-                                </div>
-                            ) : (
-                                reservations.data.map((item, index) => {
-                                    const car = reservationsCars[item.car_id];
-                                    return (
-                                        <div
-                                            key={item.id || index}
-                                            className="bg-gray-100 dark:bg-gray-700 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between shadow"
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex flex-col md:flex-row md:gap-8">
-                                                    <div>
-                                                        <div className="text-gray-500 text-xs">
-                                                            Pick Location
-                                                        </div>
-                                                        <div className="font-semibold text-gray-800 dark:text-gray-100">
-                                                            {item.pick_location}
-                                                        </div>
-                                                        <div className="text-gray-400 text-xs">
-                                                            {item.start_time}
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-2 md:mt-0">
-                                                        <div className="text-gray-500 text-xs">
-                                                            Drop Location
-                                                        </div>
-                                                        <div className="font-semibold text-gray-800 dark:text-gray-100">
-                                                            {item.drop_location}
-                                                        </div>
-                                                        <div className="text-gray-400 text-xs">
-                                                            {item.end_time}
-                                                        </div>
-                                                    </div>
+                    {activeTab === "profile" && (
+                        <section>
+                            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
+                                Edit Profile
+                            </h3>
+                            <form
+                                className="max-w-md bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col gap-4"
+                                onSubmit={handleProfileSave}
+                            >
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="relative group">
+                                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-500 shadow mb-2 bg-white flex items-center justify-center">
+                                            {editImage ? (
+                                                <img
+                                                    src={URL.createObjectURL(
+                                                        editImage,
+                                                    )}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : user?.image ? (
+                                                <img
+                                                    src={user.image}
+                                                    alt="Profile"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500">
+                                                    {user?.name?.charAt(0) ||
+                                                        "U"}
                                                 </div>
-                                                {car && (
-                                                    <div className="my-2 py-2 flex items-center gap-2">
-                                                        {car.image && (
-                                                            <img
-                                                                src={car.image}
-                                                                alt={car.name}
-                                                                className="max-w-30 h-10 object-cover rounded"
-                                                            />
-                                                        )}
-                                                        <div>
-                                                            <div className="font-bold text-blue-700">
-                                                                {car.name}
-                                                            </div>
-                                                            <div className="text-xs text-gray-500">
-                                                                {car.brand}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="mt-4 md:mt-0 flex-shrink-0">
-                                                <span className="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
-                                                    Reservation #
-                                                    {reservations.per_page *
+                                            )}
+                                        </div>
+                                        <label
+                                            htmlFor="edit-profile-image-upload"
+                                            className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200 mb-2"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                strokeWidth={1.5}
+                                                stroke="currentColor"
+                                                className="w-6 h-6"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
+                                                />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"
+                                                />
+                                            </svg>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            id="edit-profile-image-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">
+                                        Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        value={editName}
+                                        onChange={(e) =>
+                                            setEditName(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        value={editEmail}
+                                        onChange={(e) =>
+                                            setEditEmail(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="w-full bg-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                >
+                                    {isSaving ? "Saving..." : "Save Changes"}
+                                </button>
+                            </form>
+                        </section>
+                    )}
+                    {activeTab === "reservations" && (
+                        <section>
+                            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
+                                Reservations
+                            </h3>
+                            <div className="space-y-4">
+                                {reservations.data.length === 0 ? (
+                                    <div className="text-gray-400">
+                                        No reservations found.
+                                    </div>
+                                ) : (
+                                    reservations.data.map((item, index) => (
+                                        <ReservationItem
+                                            key={item.id || index}
+                                            item={{
+                                                ...item,
+                                                displayIndex:
+                                                    reservations.per_page *
                                                         (reservations.current_page -
                                                             1) +
-                                                        index +
-                                                        1}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                            {/* Pagination Controls */}
-                            {reservations.last_page > 1 && (
-                                <div className="flex gap-2 justify-center mt-4">
-                                    <button
-                                        disabled={
-                                            reservations.current_page === 1
-                                        }
-                                        onClick={() =>
-                                            setReservationsPage((p) =>
-                                                Math.max(1, p - 1),
-                                            )
-                                        }
-                                        className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-                                    >
-                                        Previous
-                                    </button>
-                                    <span className="px-2 py-1">
-                                        Page {reservations.current_page} of{" "}
-                                        {reservations.last_page}
-                                    </span>
-                                    <button
-                                        disabled={
-                                            reservations.current_page ===
-                                            reservations.last_page
-                                        }
-                                        onClick={() =>
-                                            setReservationsPage((p) =>
-                                                Math.min(
-                                                    reservations.last_page,
-                                                    p + 1,
-                                                ),
-                                            )
-                                        }
-                                        className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Reviews Section */}
-                    <section>
-                        <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
-                            My Reviews
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {reviews.data.length === 0 ? (
-                                <div className="text-gray-400 col-span-full">
-                                    No reviews found.
-                                </div>
-                            ) : (
-                                reviews.data.map((item, index) => {
-                                    const car = reviewsCars[item.car_id];
-                                    return (
-                                        <div
-                                            key={item.id || index}
-                                            className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200"
+                                                    index +
+                                                    1,
+                                            }}
+                                            car={reservationsCars[item.car_id]}
+                                            onEdit={() =>
+                                                handleEditReservation(item.id)
+                                            }
+                                            onDelete={() =>
+                                                setConfirmModal({
+                                                    open: true,
+                                                    type: "reservation",
+                                                    id: item.id,
+                                                })
+                                            }
+                                            deleting={
+                                                deletingReservationId ===
+                                                item.id
+                                            }
+                                        />
+                                    ))
+                                )}
+                                {reservations.last_page > 1 && (
+                                    <div className="flex gap-2 justify-center mt-4">
+                                        <button
+                                            disabled={
+                                                reservations.current_page === 1
+                                            }
+                                            onClick={() =>
+                                                setReservationsPage((p) =>
+                                                    Math.max(1, p - 1),
+                                                )
+                                            }
+                                            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-20 h-14 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-600">
-                                                    {car && car.image ? (
-                                                        <img
-                                                            src={car.image}
-                                                            alt={car.name}
-                                                            className="w-full h-full object-contain p-1"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                            No image
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="font-bold text-gray-900 dark:text-white truncate">
-                                                        {car
-                                                            ? car.name
-                                                            : `Car #${item.car_id}`}
-                                                    </h4>
-                                                    <div className="flex items-center gap-0.5 mt-0.5">
-                                                        {Array.from({
-                                                            length: item.stars,
-                                                        }).map((_, i) => (
-                                                            <StarIcon
-                                                                key={i}
-                                                                className="w-4 h-4 text-yellow-400 fill-current"
-                                                            />
-                                                        ))}
-                                                        {Array.from({
-                                                            length:
-                                                                5 - item.stars,
-                                                        }).map((_, i) => (
-                                                            <StarOutlineIcon
-                                                                key={i}
-                                                                className="w-4 h-4 text-gray-300"
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed italic">
-                                                "{item.review}"
-                                            </p>
+                                            Previous
+                                        </button>
+                                        <span className="px-2 py-1">
+                                            Page {reservations.current_page} of{" "}
+                                            {reservations.last_page}
+                                        </span>
+                                        <button
+                                            disabled={
+                                                reservations.current_page ===
+                                                reservations.last_page
+                                            }
+                                            onClick={() =>
+                                                setReservationsPage((p) =>
+                                                    Math.min(
+                                                        reservations.last_page,
+                                                        p + 1,
+                                                    ),
+                                                )
+                                            }
+                                            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+                    {activeTab === "reviews" && (
+                        <section>
+                            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
+                                My Reviews
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {reviews.data.length === 0 ? (
+                                    <div className="text-gray-400 col-span-full">
+                                        No reviews found.
+                                    </div>
+                                ) : (
+                                    reviews.data.map((item, index) => (
+                                        <ReviewItem
+                                            key={item.id || index}
+                                            item={item}
+                                            car={reviewsCars[item.car_id]}
+                                            onEdit={() =>
+                                                handleEditReview(item.id)
+                                            }
+                                            onDelete={() =>
+                                                setConfirmModal({
+                                                    open: true,
+                                                    type: "review",
+                                                    id: item.id,
+                                                })
+                                            }
+                                            deleting={
+                                                deletingReviewId === item.id
+                                            }
+                                        />
+                                    ))
+                                )}
+                            </div>
+                            {/* Edit Review Modal */}
+                            {editReviewModal.open && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
+                                        <h4 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-100">
+                                            Edit Review
+                                        </h4>
+                                        <div className="mb-4">
+                                            <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">
+                                                Review
+                                            </label>
+                                            <textarea
+                                                className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                value={editReviewModal.review}
+                                                onChange={(e) =>
+                                                    setEditReviewModal(
+                                                        (modal) => ({
+                                                            ...modal,
+                                                            review: e.target
+                                                                .value,
+                                                        }),
+                                                    )
+                                                }
+                                                rows={3}
+                                            />
                                         </div>
-                                    );
-                                })
-                            )}
-                            {/* Pagination Controls */}
-                            {reviews.last_page > 1 && (
-                                <div className="flex gap-2 justify-center mt-4 col-span-full">
-                                    <button
-                                        disabled={reviews.current_page === 1}
-                                        onClick={() =>
-                                            setReviewsPage((p) =>
-                                                Math.max(1, p - 1),
-                                            )
-                                        }
-                                        className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-                                    >
-                                        Previous
-                                    </button>
-                                    <span className="px-2 py-1">
-                                        Page {reviews.current_page} of{" "}
-                                        {reviews.last_page}
-                                    </span>
-                                    <button
-                                        disabled={
-                                            reviews.current_page ===
-                                            reviews.last_page
-                                        }
-                                        onClick={() =>
-                                            setReviewsPage((p) =>
-                                                Math.min(
-                                                    reviews.last_page,
-                                                    p + 1,
-                                                ),
-                                            )
-                                        }
-                                        className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-                                    >
-                                        Next
-                                    </button>
+                                        <div className="mb-4">
+                                            <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">
+                                                Stars
+                                            </label>
+                                            <select
+                                                className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                value={editReviewModal.stars}
+                                                onChange={(e) =>
+                                                    setEditReviewModal(
+                                                        (modal) => ({
+                                                            ...modal,
+                                                            stars: Number(
+                                                                e.target.value,
+                                                            ),
+                                                        }),
+                                                    )
+                                                }
+                                            >
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <option
+                                                        key={star}
+                                                        value={star}
+                                                    >
+                                                        {star}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <button
+                                                className="px-4 py-2 rounded-lg font-bold bg-gray-300 text-gray-700 hover:bg-gray-400"
+                                                onClick={() =>
+                                                    setEditReviewModal({
+                                                        open: false,
+                                                        id: null,
+                                                        review: "",
+                                                        stars: 1,
+                                                    })
+                                                }
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                className="px-4 py-2 rounded-lg font-bold bg-blue-600 text-white hover:bg-blue-700"
+                                                onClick={handleSubmitEditReview}
+                                            >
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
-                        </div>
-                    </section>
-
-                    {/* Payments Section (Placeholder) */}
-                    <section>
-                        <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
-                            Payments
-                        </h3>
-                        <div className="bg-gray-100 dark:bg-gray-700 rounded-xl p-4 text-gray-400 text-center">
-                            Payment history and details coming soon.
-                        </div>
-                    </section>
+                        </section>
+                    )}
+                    <ConfirmModal
+                        open={showDeleteModal}
+                        title="Delete Account"
+                        message="Are you sure you want to delete your account? This action cannot be undone."
+                        onConfirm={handleDeleteAccount}
+                        onCancel={() => setShowDeleteModal(false)}
+                        confirmText="Delete Account"
+                        cancelText="Cancel"
+                        loading={isDeletingAccount}
+                    />
+                    <ConfirmModal
+                        open={
+                            confirmModal.open &&
+                            confirmModal.type === "reservation"
+                        }
+                        title="Delete Reservation"
+                        message="Are you sure you want to delete this reservation? This action cannot be undone."
+                        onConfirm={() =>
+                            handleDeleteReservation(confirmModal.id)
+                        }
+                        onCancel={() =>
+                            setConfirmModal({
+                                open: false,
+                                type: null,
+                                id: null,
+                            })
+                        }
+                        confirmText="Delete"
+                        cancelText="Cancel"
+                        loading={deletingReservationId === confirmModal.id}
+                    />
+                    <ConfirmModal
+                        open={
+                            confirmModal.open && confirmModal.type === "review"
+                        }
+                        title="Delete Review"
+                        message="Are you sure you want to delete this review? This action cannot be undone."
+                        onConfirm={() => handleDeleteReview(confirmModal.id)}
+                        onCancel={() =>
+                            setConfirmModal({
+                                open: false,
+                                type: null,
+                                id: null,
+                            })
+                        }
+                        confirmText="Delete"
+                        cancelText="Cancel"
+                        loading={deletingReviewId === confirmModal.id}
+                    />
                 </main>
             </div>
             <Footer />
