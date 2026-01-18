@@ -37,7 +37,20 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): JsonResponse
     {
         $user = $request->user();
-        $user->fill($request->validated());
+        $validated = $request->validated();
+
+        if ($request->hasFile('image')) {
+            // Delete old image if it exists
+            if ($user->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
+            }
+
+            // Store new image
+            $path = $request->file('image')->store('profile_images', 'public');
+            $validated['image'] = $path;
+        }
+
+        $user->fill($validated);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
