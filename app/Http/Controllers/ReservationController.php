@@ -8,6 +8,7 @@ use App\Models\Reservation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Auth\Access\AuthorizationException;
+use App\Models\User;
 use Throwable;
 
 class ReservationController extends Controller
@@ -18,11 +19,17 @@ class ReservationController extends Controller
      * @param Request 
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $reservations = $request->user()->reservations()->with('car')->get();
+        try {
+            $auth_user = auth()->user();
+            $user = User::findOrFail($auth_user->id);
+            $reservations = $user->reservations()->with('car')->get();
 
-        return response()->success($reservations, 'Reservations retrieved successfully.');
+            return response()->success($reservations, 'Reservations retrieved successfully.');
+        } catch (Throwable $e) {
+            return response()->error('Failed to retrieve reservations.', 500, [$e->getMessage()]);
+        }
     }
 
     /**
@@ -36,7 +43,7 @@ class ReservationController extends Controller
     {
         try {
             $reservation = Reservation::with('car')->findOrFail($id);
-            
+
             $this->authorize('view', $reservation);
 
             return response()->success($reservation, 'Reservation retrieved successfully.');
@@ -74,7 +81,7 @@ class ReservationController extends Controller
     {
         try {
             $reservation = Reservation::findOrFail($id);
-            
+
             $this->authorize('update', $reservation);
 
             $reservation->update($request->validated());
@@ -98,9 +105,9 @@ class ReservationController extends Controller
     {
         try {
             $reservation = Reservation::findOrFail($id);
-            
+
             $this->authorize('delete', $reservation);
-            
+
             $reservation->delete();
             return response()->success(null, 'Reservation deleted successfully.');
         } catch (AuthorizationException $e) {
@@ -110,4 +117,3 @@ class ReservationController extends Controller
         }
     }
 }
-
