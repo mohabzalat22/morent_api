@@ -195,7 +195,7 @@ function DetailPage() {
 
     return (
         <div className="bg-white">
-            <div className="xl:container mx-auto relative">
+            <div className="xl:container mx-auto relative px-2 md:px-6 xl:px-12">
                 {/* Sonner Toast container */}
                 <Toaster position="top-right" richColors />
 
@@ -303,9 +303,9 @@ function DetailPage() {
                     </div>
                 )}
 
-                <div className="xl:grid grid-cols-12">
+                <div className="xl:grid grid-cols-12 gap-8 xl:gap-12">
                     {/* Sidebar */}
-                    <div className="hidden xl:block col-start-1 col-span-3 bg-white py-6 px-10">
+                    <div className="hidden xl:block col-start-1 col-span-3 bg-white py-8 px-10 mr-4 rounded-xl shadow-sm">
                         <h3 className="text-sm text-gray-400">TYPE</h3>
                         <ul className="p-3">
                             {[
@@ -389,8 +389,8 @@ function DetailPage() {
                     </div>
 
                     {/* Main Content */}
-                    <div className="col-start-4 col-span-9 bg-gray-100">
-                        <div className="xl:grid grid-cols-2 px-4 py-4 md:px-auto md:py-8">
+                    <div className="col-start-4 col-span-9 bg-gray-100 rounded-xl shadow-sm px-2 md:px-6 py-6">
+                        <div className="xl:grid grid-cols-2 gap-8 px-2 py-4 md:px-0 md:py-8">
                             {/* Left - Car Images */}
                             <div className="flex justify-center">
                                 <div className="flex flex-col">
@@ -640,8 +640,8 @@ function DetailPage() {
                         </div>
 
                         {/* Reviews Section */}
-                        <div className="px-4 py-4 md:px-auto md:py-8">
-                            <div className="bg-white p-4 rounded-xl">
+                        <div className="px-2 py-4 md:px-0 md:py-8">
+                            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm mb-8">
                                 <div className="flex justify-between">
                                     <div className="flex">
                                         <h2 className="text-gray-900 font-semibold text-xl">
@@ -679,92 +679,65 @@ function DetailPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="divide-y">
-                                        <div className="my-6">
-                                            {reviews.map((item, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-center mt-6"
-                                                >
+                                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 my-6">
+                                        {reviews.map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex flex-col bg-gray-50 rounded-xl shadow p-5 border border-gray-100 hover:shadow-lg transition-all duration-200"
+                                            >
+                                                <div className="flex items-center mb-3">
                                                     <div className="flex-shrink-0">
-                                                        {profileImage ? (
+                                                        {item.user
+                                                            .profile_image ? (
                                                             <img
                                                                 src={
-                                                                    profileImage
+                                                                    item.user
+                                                                        .profile_image
                                                                 }
                                                                 alt=""
                                                                 className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm"
                                                             />
                                                         ) : (
-                                                            <div className="w-12 h-12">
+                                                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                                                                 <Avatar />
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex-grow px-4">
-                                                        <div className="flex justify-end">
-                                                            <p className="text-sm text-gray-400">
-                                                                {
-                                                                    item.created_at
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <h4 className="text-gray-400 text-sm">
-                                                                {item.user.name}
-                                                            </h4>
-                                                            <div className="flex items-center">
-                                                                <div className="flex">
-                                                                    {Array.from(
-                                                                        {
-                                                                            length: item.stars,
-                                                                        },
-                                                                    ).map(
-                                                                        (
-                                                                            _,
-                                                                            i,
-                                                                        ) => (
-                                                                            <div
-                                                                                key={
-                                                                                    i
-                                                                                }
-                                                                                className="m-1"
-                                                                            >
-                                                                                <StarIcon className="w-4 h-4" />
-                                                                            </div>
-                                                                        ),
-                                                                    )}
-                                                                    {Array.from(
-                                                                        {
-                                                                            length:
-                                                                                5 -
-                                                                                item.stars,
-                                                                        },
-                                                                    ).map(
-                                                                        (
-                                                                            _,
-                                                                            i,
-                                                                        ) => (
-                                                                            <div
-                                                                                key={
-                                                                                    i
-                                                                                }
-                                                                                className="m-1"
-                                                                            >
-                                                                                <StarOutlineIcon className="w-4 h-4" />
-                                                                            </div>
-                                                                        ),
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p className="mt-4 text-sm text-gray-600 leading-6">
-                                                            {item.review}
-                                                        </p>
+                                                    <div className="ml-4 flex flex-col">
+                                                        <span className="text-gray-900 font-semibold text-base">
+                                                            {item.user.name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400 mt-1">
+                                                            {item.created_at}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <div className="flex items-center mb-2">
+                                                    <div className="flex">
+                                                        {Array.from({
+                                                            length: item.stars,
+                                                        }).map((_, i) => (
+                                                            <StarIcon
+                                                                key={i}
+                                                                className="w-4 h-4 text-yellow-400"
+                                                            />
+                                                        ))}
+                                                        {Array.from({
+                                                            length:
+                                                                5 - item.stars,
+                                                        }).map((_, i) => (
+                                                            <StarOutlineIcon
+                                                                key={i}
+                                                                className="w-4 h-4 text-gray-300"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <p className="text-gray-700 text-sm leading-6 mt-2 mb-1">
+                                                    {item.review}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -789,8 +762,8 @@ function DetailPage() {
                         </div>
 
                         {/* Popular Cars */}
-                        <div className="px-8 py-4 md:px-6 md:py-8">
-                            <div className="flex justify-between px-6">
+                        <div className="px-2 py-4 md:px-0 md:py-8">
+                            <div className="flex justify-between px-2 md:px-6 mb-4">
                                 <h4 className="text-base text-gray-600">
                                     Popular Cars
                                 </h4>
@@ -799,7 +772,7 @@ function DetailPage() {
                                 </a>
                             </div>
                             <Swiper
-                                className="mt-6"
+                                className="mt-6 mb-2"
                                 slidesPerView={1}
                                 modules={[Pagination]}
                                 pagination={{ clickable: true }}
@@ -807,7 +780,10 @@ function DetailPage() {
                                     768: { slidesPerView: 3 },
                                 }}
                             >
-                                {dataFilter.map((item) => (
+                                {(dataFilter.length > 0
+                                    ? dataFilter
+                                    : allCars
+                                ).map((item) => (
                                     <SwiperSlide key={item.id}>
                                         <CarCard
                                             className="m-1"
